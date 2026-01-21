@@ -40,11 +40,11 @@ async def admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await update.message.reply_text("❌")
     
     keyboard = [
-        [InlineKeyboardButton("⏰", callback_data="set_interval")],
-        [InlineKeyboardButton("📝1", callback_data="msg1")],
-        [InlineKeyboardButton("📝2", callback_data="msg2")],
-        [InlineKeyboardButton("🚫", callback_data="banned")],
-        [InlineKeyboardButton("✅", callback_data="save")]
+        [InlineKeyboardButton("⏰تنظیم زمان تکرار", callback_data="set_interval")],
+        [InlineKeyboardButton("📝متن 1", callback_data="msg1")],
+        [InlineKeyboardButton("📝متن 2", callback_data="msg2")],
+        [InlineKeyboardButton("🚫کلمات ممنوعه", callback_data="banned")],
+        [InlineKeyboardButton("✅ذخیره", callback_data="save")]
     ]
     text = f"""تنظیمات:
 ⏰: {config['interval_hours']}س
