@@ -37,7 +37,7 @@ async def handle_post_flow(update: Update, context):
         elif state["type"] == "2":
             await context.bot.send_video(CHANNEL_ID, media.video.file_id, caption=final_text)
         else:
-            await context.bot.send_message(CHANNEL_ID, final_text + "\n" + media.text)
+            await context.bot.send_message(CHANNEL_ID, final_text + "\n\n\n" + media.text)
 
         user_states.pop(uid)
         await update.message.reply_text("ارسال شد ✅")
