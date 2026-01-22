@@ -2,11 +2,13 @@ import json
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 
-TOKEN = "8522183948:AAGG4Xu0Z08bNatNACjqZnWOvrGKV_gsIMQ"
+import os
 
-ADMIN_IDS = [40012360]
-PRIVATE_GROUP_ID = -1001317486268
-TARGET_CHANNEL_ID = -10013065291690
+TOKEN = os.getenv("BOT_TOKEN")
+ADMIN_ID = int(os.getenv("ADMIN_ID"))
+MAIN_CHANNEL = int(os.getenv("CHANNEL_ID"))
+GROUP_ID = int(os.getenv("GROUP_ID"))
+
 
 CONFIG_FILE = "config.json"
 
