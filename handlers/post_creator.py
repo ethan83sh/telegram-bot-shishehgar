@@ -41,3 +41,7 @@ async def handle_post_flow(update: Update, context):
 
         user_states.pop(uid)
         await update.message.reply_text("ارسال شد ✅")
+
+from handlers.stats import log_post
+log_post()
+
