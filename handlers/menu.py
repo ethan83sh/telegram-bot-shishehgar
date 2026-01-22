@@ -7,4 +7,4 @@ def main_menu():
         [InlineKeyboardButton("📊 آمار", callback_data="stats")],
         [InlineKeyboardButton("📤 پست لایو جدید", callback_data="live_post")],
     ]
-    return InlineKeyboardMarkup(keyboard)
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
