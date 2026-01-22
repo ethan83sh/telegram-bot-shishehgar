@@ -16,6 +16,8 @@ async def start(update, context):
 
 # هاندلرها
 app.add_handler(CommandHandler("start", start))
+app.add_handler(CallbackQueryHandler(start_new_post, pattern="new_post"))
+app.add_handler(CallbackQueryHandler(channel_stats, pattern="stats"))
 app.add_handler(CallbackQueryHandler(start_live_post, pattern="live_post"))
 app.add_handler(MessageHandler(filters.ALL, handle_live_flow))
 
