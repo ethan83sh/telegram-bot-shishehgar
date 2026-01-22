@@ -6,6 +6,7 @@ from handlers.post_creator import start_new_post, handle_post_flow
 
 # برای پست لایو
 from handlers.live_post import start_live_post, handle_live_flow
+from handlers.stats import channel_stats
 
 
 TOKEN = os.getenv("BOT_TOKEN")
@@ -26,5 +27,7 @@ app.add_handler(MessageHandler(filters.ALL, handle_post_flow))
 app.add_handler(CallbackQueryHandler(channel_stats, pattern="stats"))
 app.add_handler(CallbackQueryHandler(start_live_post, pattern="live_post"))
 app.add_handler(MessageHandler(filters.ALL, handle_live_flow))
+app.add_handler(CallbackQueryHandler(channel_stats, pattern="stats"))
+
 
 app.run_polling()
