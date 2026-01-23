@@ -8,7 +8,7 @@ from telegram.ext import ContextTypes
 
 # ================= CONFIG =================
 API_ID = int(os.getenv("TG_API_ID"))
-API_HASH = os.getenv("TG_API_HASH"))
+API_HASH = os.getenv("TG_API_HASH")
 CHANNEL_ID = int(os.getenv("CHANNEL_ID"))  # مثال: -1001234567890
 
 # نام session می‌تواند هر چیزی باشد
