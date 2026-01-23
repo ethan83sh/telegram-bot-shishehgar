@@ -2,7 +2,6 @@
 import os
 from datetime import datetime, timedelta
 from telethon import TelegramClient
-from telethon.errors import SessionPasswordNeededError
 from telegram import Update
 from telegram.ext import ContextTypes
 
@@ -11,10 +10,11 @@ API_ID = int(os.getenv("TG_API_ID"))
 API_HASH = os.getenv("TG_API_HASH")
 CHANNEL_ID = int(os.getenv("CHANNEL_ID"))  # مثال: -1001234567890
 
-# نام session می‌تواند هر چیزی باشد
+# نام session
 SESSION_NAME = "bot_session"
 
 # ================= TELETHON CLIENT =================
+# فقط load session موجود، نیازی به input نیست
 client = TelegramClient(SESSION_NAME, API_ID, API_HASH)
 
 # ================= FUNCTION =================
@@ -23,17 +23,7 @@ async def channel_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     since = datetime.now() - timedelta(hours=24)
 
     try:
-        # Start client (User login)
-        await client.start()  # دفعه اول باید کد تایید را وارد کنی
-        # اگر حساب 2FA فعال باشد
-        try:
-            if not await client.is_user_authorized():
-                await client.send_code_request(os.getenv("MY_PHONE"))
-                code = input("Enter the login code: ")  # دفعه اول، فقط local
-                await client.sign_in(os.getenv("MY_PHONE"), code)
-        except SessionPasswordNeededError:
-            password = input("Enter 2FA password: ")
-            await client.start(password=password)
+        await client.start()  # از session موجود استفاده می‌کند
 
         # گرفتن entity کانال
         channel = await client.get_entity(CHANNEL_ID)
