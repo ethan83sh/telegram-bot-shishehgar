@@ -37,13 +37,19 @@ def init_auto(context):
 async def start_auto(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
+    
     init_auto(context)
     context.user_data["mode"] = "auto_post"
+
+    # JobQueue اولیه
+    start_time = context.bot_data.get("auto_start_time") or datetime.now()
+    schedule_auto_job(context, start_time)
 
     await query.message.reply_text(
         "منوی پست خودکار:",
         reply_markup=auto_menu()
     )
+
 
 # -----------------------------
 # مدیریت کلیک منو
@@ -83,41 +89,34 @@ async def handle_auto_flow(update: Update, context: ContextTypes.DEFAULT_TYPE):
     init_auto(context)
 
     # تغییر بازه
-    if context.user_data.get("awaiting_interval"):
-        try:
-            minutes = int(update.message.text)
-            context.bot_data["auto_interval"] = minutes
-            context.user_data.pop("awaiting_interval")
-            await update.message.reply_text(f"بازه زمانی تغییر کرد به {minutes} دقیقه")
-            # برنامه‌ریزی مجدد Job با بازه جدید
-            start_time = context.bot_data.get("auto_start_time") or datetime.now()
-            schedule_auto_job(context, start_time)
-        except:
-            await update.message.reply_text("لطفاً عدد صحیح وارد کن")
-        return
+if context.user_data.get("awaiting_interval"):
+    minutes = int(update.message.text)
+    context.bot_data["auto_interval"] = minutes
+    context.user_data.pop("awaiting_interval")
+    await update.message.reply_text(f"✅ بازه زمانی تغییر کرد به {minutes} دقیقه")
+    start_time = context.bot_data.get("auto_start_time") or datetime.now()
+    schedule_auto_job(context, start_time)
+    return
 
-    # تغییر متن پیام
-    if context.user_data.get("awaiting_text"):
-        text = update.message.text
-        context.bot_data["auto_text"] = text
-        context.user_data.pop("awaiting_text")
-        await update.message.reply_text("متن پیام خودکار تغییر کرد ✅")
-        return
+# تغییر متن
+if context.user_data.get("awaiting_text"):
+    text = update.message.text
+    context.bot_data["auto_text"] = text
+    context.user_data.pop("awaiting_text")
+    await update.message.reply_text("✅ متن پیام خودکار تغییر کرد")
+    return
 
-    # ریست زمان شروع
-    if context.user_data.get("awaiting_reset"):
-        try:
-            h, m = map(int, update.message.text.split(":"))
-            now = datetime.now()
-            start_time = now.replace(hour=h, minute=m, second=0, microsecond=0)
-            if start_time < now:
-                start_time += timedelta(days=1)
-            context.user_data.pop("awaiting_reset")
-            schedule_auto_job(context, start_time)
-            await update.message.reply_text(f"زمان اولین پیام ریست شد: {start_time.strftime('%Y-%m-%d %H:%M')}")
-        except:
-            await update.message.reply_text("فرمت اشتباه. مثال: 21:00")
-        return
+# ریست زمان
+if context.user_data.get("awaiting_reset"):
+    h, m = map(int, update.message.text.split(":"))
+    now = datetime.now()
+    start_time = now.replace(hour=h, minute=m, second=0, microsecond=0)
+    if start_time < now:
+        start_time += timedelta(days=1)
+    context.user_data.pop("awaiting_reset")
+    schedule_auto_job(context, start_time)
+    await update.message.reply_text(f"✅ زمان اولین پیام ریست شد: {start_time.strftime('%Y-%m-%d %H:%M')}")
+    return
 
 # -----------------------------
 # ارسال واقعی پیام
@@ -133,7 +132,7 @@ async def auto_post_job(context: ContextTypes.DEFAULT_TYPE):
 def schedule_auto_job(context, start_time: datetime):
     init_auto(context)
 
-    interval = context.bot_data.get("auto_interval", 60) * 60  # ثانیه
+    interval = context.bot_data.get("auto_interval", 60) * 60  # دقیقه → ثانیه
 
     # لغو Job قبلی
     job = context.bot_data.get("auto_job")
@@ -143,9 +142,10 @@ def schedule_auto_job(context, start_time: datetime):
     now = datetime.now()
     delay = (start_time - now).total_seconds()
     if delay < 0:
+        # اگر زمان گذشته، اجرای بعدی بر اساس بازه
         delay = interval - ((now - start_time).total_seconds() % interval)
 
-    # ایجاد Job جدید
+    # Job جدید
     job = context.job_queue.run_repeating(
         auto_post_job,
         interval=interval,
@@ -153,3 +153,5 @@ def schedule_auto_job(context, start_time: datetime):
     )
 
     context.bot_data["auto_job"] = job
+    context.bot_data["auto_start_time"] = start_time
+
