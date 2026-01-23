@@ -3,13 +3,25 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Mess
 
 # Handlers
 from handlers.menu import main_menu
-from handlers.post_creator import start_new_post, handle_post_flow
 from handlers.auto_poster import start_auto
-from handlers.live_post import start_live_post, handle_live_flow
 from handlers.stats import channel_stats
+
+
+async def universal_message_router(update, context):
+    mode = context.user_data.get("mode")
+
+    if mode == "new_post":
+        await handle_post_flow(update, context)
+
+    elif mode == "live_post":
+        await handle_live_flow(update, context)
+
 
 TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_ID = int(os.getenv("ADMIN_ID"))
+
+
+app.add_handler(MessageHandler(filters.ALL, universal_message_router))
 
 app = Application.builder().token(TOKEN).build()
 
