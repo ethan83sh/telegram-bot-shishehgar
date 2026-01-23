@@ -1,3 +1,4 @@
+# handlers/auto_poster.py
 import os
 from datetime import datetime, timedelta
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -36,7 +37,6 @@ def init_auto(context):
 async def start_auto(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-
     init_auto(context)
     context.user_data["mode"] = "auto_post"
 
@@ -51,7 +51,6 @@ async def start_auto(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_auto_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-
     init_auto(context)
     data = query.data
 
@@ -83,16 +82,21 @@ async def handle_auto_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_auto_flow(update: Update, context: ContextTypes.DEFAULT_TYPE):
     init_auto(context)
 
+    # تغییر بازه
     if context.user_data.get("awaiting_interval"):
         try:
             minutes = int(update.message.text)
             context.bot_data["auto_interval"] = minutes
             context.user_data.pop("awaiting_interval")
             await update.message.reply_text(f"بازه زمانی تغییر کرد به {minutes} دقیقه")
+            # برنامه‌ریزی مجدد Job با بازه جدید
+            start_time = context.bot_data.get("auto_start_time") or datetime.now()
+            schedule_auto_job(context, start_time)
         except:
             await update.message.reply_text("لطفاً عدد صحیح وارد کن")
         return
 
+    # تغییر متن پیام
     if context.user_data.get("awaiting_text"):
         text = update.message.text
         context.bot_data["auto_text"] = text
@@ -100,6 +104,7 @@ async def handle_auto_flow(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("متن پیام خودکار تغییر کرد ✅")
         return
 
+    # ریست زمان شروع
     if context.user_data.get("awaiting_reset"):
         try:
             h, m = map(int, update.message.text.split(":"))
@@ -107,15 +112,15 @@ async def handle_auto_flow(update: Update, context: ContextTypes.DEFAULT_TYPE):
             start_time = now.replace(hour=h, minute=m, second=0, microsecond=0)
             if start_time < now:
                 start_time += timedelta(days=1)
-            schedule_auto_job(context, start_time)
             context.user_data.pop("awaiting_reset")
+            schedule_auto_job(context, start_time)
             await update.message.reply_text(f"زمان اولین پیام ریست شد: {start_time.strftime('%Y-%m-%d %H:%M')}")
         except:
             await update.message.reply_text("فرمت اشتباه. مثال: 21:00")
         return
 
 # -----------------------------
-# Job واقعی ارسال پیام
+# ارسال واقعی پیام
 # -----------------------------
 async def auto_post_job(context: ContextTypes.DEFAULT_TYPE):
     text = context.bot_data["auto_text"]
@@ -123,31 +128,28 @@ async def auto_post_job(context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(CHANNEL_ID, text)
 
 # -----------------------------
-# زمان‌بندی job
+# زمان‌بندی JobQueue
 # -----------------------------
 def schedule_auto_job(context, start_time: datetime):
     init_auto(context)
 
-    interval = context.bot_data["auto_interval"] * 60  # ثانیه
-    if start_time:
-        context.bot_data["auto_start_time"] = start_time
-    else:
-        start_time = context.bot_data.get("auto_start_time") or datetime.now()
+    interval = context.bot_data.get("auto_interval", 60) * 60  # ثانیه
+
+    # لغو Job قبلی
+    job = context.bot_data.get("auto_job")
+    if job:
+        job.schedule_removal()
 
     now = datetime.now()
     delay = (start_time - now).total_seconds()
     if delay < 0:
         delay = interval - ((now - start_time).total_seconds() % interval)
 
-    # لغو job قبلی
-    job = context.bot_data.get("auto_job")
-    if job:
-        job.schedule_removal()
-
-    # برنامه‌ریزی job تکرارشونده
+    # ایجاد Job جدید
     job = context.job_queue.run_repeating(
         auto_post_job,
         interval=interval,
         first=delay
     )
+
     context.bot_data["auto_job"] = job
