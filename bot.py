@@ -66,8 +66,9 @@ app.add_handler(
 # پست لایو
 app.add_handler(CallbackQueryHandler(start_live_post, pattern="live_post"))
 
-# آمار کانال
+# دکمه‌های منوی آمار
 app.add_handler(CallbackQueryHandler(channel_stats, pattern="stats"))
+
 
 # فقط یک MessageHandler برای همه پیام‌های متنی
 app.add_handler(MessageHandler(filters.ALL, universal_message_router))
