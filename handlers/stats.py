@@ -7,9 +7,9 @@ from telegram.ext import ContextTypes
 
 # ================= CONFIG TELETHON =================
 API_ID = int(os.getenv("TG_API_ID"))
-API_HASH = os.getenv("TG_API_HASH"))
+API_HASH = os.getenv("TG_API_HASH")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-CHANNEL_USERNAME = os.getenv("CHANNEL_USERNAME")  # نام کاربری کانال یا -100xxxxxxxxx
+CHANNEL_ID = int(os.getenv("CHANNEL_ID"))  # استفاده از ID کانال
 
 # ================= TELETHON CLIENT =================
 # استفاده از Bot Token، بدون نیاز به شماره و input
@@ -21,8 +21,8 @@ async def channel_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     messages = []
 
     try:
-        # گرفتن entity کانال
-        channel = await client.get_entity(CHANNEL_USERNAME)
+        # گرفتن entity کانال با ID
+        channel = await client.get_entity(CHANNEL_ID)
 
         # خواندن پیام‌ها به ترتیب ارسال
         async for message in client.iter_messages(channel, reverse=True):
@@ -33,7 +33,7 @@ async def channel_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not messages:
             reply_text = "در 24 ساعت گذشته هیچ پستی در کانال وجود ندارد."
         else:
-            # جمع‌بندی و محدود کردن طول پیام (اختیاری)
+            # محدود کردن پیام‌ها در صورت زیاد بودن
             if len(messages) > 20:
                 messages = messages[:20]  # فقط ۲۰ پیام آخر
                 messages.append("... پیام‌های بیشتر موجود است ...")
