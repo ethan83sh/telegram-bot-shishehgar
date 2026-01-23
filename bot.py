@@ -59,7 +59,7 @@ app.add_handler(CallbackQueryHandler(channel_stats, pattern="stats"))
 # فقط یک MessageHandler
 app.add_handler(MessageHandler(filters.ALL, message_router))
 
-# دکمه پست خودکار → منو
+# دکمه پست خودکار
 app.add_handler(CallbackQueryHandler(start_auto, pattern="auto_post"))
 
 # دکمه‌های منوی Auto Poster
@@ -68,8 +68,9 @@ app.add_handler(
                          pattern="^(view_interval|change_interval|view_text|change_text|reset_start|stop_auto)$")
 )
 
-# پیام‌های متنی برای تغییر مقادیر
+# پیام‌های متنی برای تغییرات
 app.add_handler(MessageHandler(filters.ALL, handle_auto_flow))
+
 
 # ================= RUN =================
 
