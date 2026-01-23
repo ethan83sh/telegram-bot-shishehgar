@@ -44,3 +44,35 @@ async def start_auto(update, context):
         reply_markup=auto_menu()
     )
 
+async def auto_post_job(context: ContextTypes.DEFAULT_TYPE):
+    text = context.bot_data["auto_text"]
+    CHANNEL_ID = int(os.getenv("CHANNEL_ID"))
+    await context.bot.send_message(CHANNEL_ID, text)
+
+
+def schedule_auto_job(context, start_time: datetime):
+    init_auto(context)
+
+    interval = context.bot_data["auto_interval"] * 60  # ثانیه
+    if start_time:
+        context.bot_data["auto_start_time"] = start_time
+    else:
+        start_time = context.bot_data.get("auto_start_time") or datetime.now()
+
+    now = datetime.now()
+    delay = (start_time - now).total_seconds()
+    if delay < 0:
+        delay = interval - ((now - start_time).total_seconds() % interval)
+
+    # لغو job قبلی
+    job = context.bot_data.get("auto_job")
+    if job:
+        job.schedule_removal()
+
+    # برنامه‌ریزی job تکرارشونده
+    job = context.job_queue.run_repeating(
+        auto_post_job,
+        interval=interval,
+        first=delay
+    )
+    context.bot_data["auto_job"] = job
