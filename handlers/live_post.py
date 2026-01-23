@@ -1,76 +1,93 @@
 import os
-from telegram.ext import ContextTypes, CallbackContext
 from telegram import Update
+from telegram.ext import ContextTypes
 from datetime import datetime
-import asyncio
 
 CHANNEL_ID = int(os.getenv("CHANNEL_ID"))
 DEFAULT_TEXT = "🌟 لایو شروع شد!\n🎯 موضوع: {title}\n📺 لینک مشاهده: {link}"
 
-user_live_states = {}
 
-# مرحله ۱: شروع گرفتن اطلاعات
+# مرحله ۱: فعال‌سازی مود لایو
 async def start_live_post(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_live_states[update.effective_user.id] = {"step": "poster"}
-    await update.message.reply_text("لطفاً پوستر لایو را بفرستید (عکس یا لینک)")
+    query = update.callback_query
+    await query.answer()
 
-# مرحله بعدی: دریافت عکس یا لینک
+    context.user_data.clear()
+    context.user_data["mode"] = "live_post"
+    context.user_data["step"] = "poster"
+
+    await query.message.reply_text("لطفاً پوستر لایو را بفرست (عکس یا لینک)")
+
+
+# جریان دریافت داده‌ها
 async def handle_live_flow(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    uid = update.effective_user.id
-    state = user_live_states.get(uid)
-    if not state:
+    if context.user_data.get("mode") != "live_post":
         return
 
-    step = state["step"]
+    step = context.user_data.get("step")
 
+    # مرحله پوستر
     if step == "poster":
-        # ذخیره عکس یا لینک
         if update.message.photo:
-            state["poster"] = update.message.photo[-1].file_id
-        elif update.message.text.startswith("http"):
-            state["poster"] = update.message.text
+            context.user_data["poster"] = update.message.photo[-1].file_id
+        elif update.message.text and update.message.text.startswith("http"):
+            context.user_data["poster"] = update.message.text
         else:
-            await update.message.reply_text("لطفاً یک عکس یا لینک معتبر ارسال کنید")
+            await update.message.reply_text("لطفاً یک عکس یا لینک معتبر ارسال کن")
             return
-        state["step"] = "title"
-        await update.message.reply_text("تیتر یا موضوع لایو را وارد کنید")
 
+        context.user_data["step"] = "title"
+        await update.message.reply_text("تیتر یا موضوع لایو را وارد کن")
+
+    # مرحله عنوان
     elif step == "title":
-        state["title"] = update.message.text
-        state["step"] = "link"
-        await update.message.reply_text("لینک یوتیوب لایو را ارسال کنید")
+        context.user_data["title"] = update.message.text
+        context.user_data["step"] = "link"
+        await update.message.reply_text("لینک یوتیوب لایو را ارسال کن")
 
+    # مرحله لینک
     elif step == "link":
-        state["link"] = update.message.text
-        state["step"] = "time"
-        await update.message.reply_text("زمان لایو را وارد کنید (فرمت YYYY-MM-DD HH:MM)")
+        context.user_data["link"] = update.message.text
+        context.user_data["step"] = "time"
+        await update.message.reply_text("زمان لایو را وارد کن (YYYY-MM-DD HH:MM)")
 
+    # مرحله زمان
     elif step == "time":
         try:
             dt = datetime.strptime(update.message.text, "%Y-%m-%d %H:%M")
-            state["time"] = dt
         except:
-            await update.message.reply_text("فرمت اشتباه است. لطفاً دوباره وارد کنید")
+            await update.message.reply_text("فرمت اشتباه است. مثال درست:\n2026-01-23 21:30")
             return
 
-        # همه اطلاعات کامل است → زمان‌بندی ارسال
         delay = (dt - datetime.now()).total_seconds()
-        if delay < 0:
-            await update.message.reply_text("زمان گذشته است! لطفاً زمان آینده وارد کنید")
+        if delay <= 0:
+            await update.message.reply_text("زمان باید در آینده باشد")
             return
 
-        # schedule job
-        context.job_queue.run_once(send_live_post, delay, data=state)
-        await update.message.reply_text(f"پست لایو برای {dt} برنامه‌ریزی شد ✅")
-        user_live_states.pop(uid)
+        # زمان‌بندی ارسال
+        context.job_queue.run_once(
+            send_live_post,
+            delay,
+            data=context.user_data.copy()
+        )
 
-# تابع ارسال پست
-async def send_live_post(context: CallbackContext):
+        context.user_data.clear()
+        await update.message.reply_text(f"پست لایو برای {dt} برنامه‌ریزی شد ✅")
+
+
+# تابع ارسال نهایی
+async def send_live_post(context: ContextTypes.DEFAULT_TYPE):
     data = context.job.data
-    text = DEFAULT_TEXT.format(title=data["title"], link=data["link"])
+
+    text = DEFAULT_TEXT.format(
+        title=data["title"],
+        link=data["link"]
+    )
+
     poster = data["poster"]
 
-    if poster.startswith("http"):  # لینک عکس
-        await context.bot.send_photo(CHANNEL_ID, poster, caption=text)
-    else:  # فایل_id عکس تلگرام
-        await context.bot.send_photo(CHANNEL_ID, poster, caption=text)
+    await context.bot.send_photo(
+        chat_id=CHANNEL_ID,
+        photo=poster,
+        caption=text
+    )
