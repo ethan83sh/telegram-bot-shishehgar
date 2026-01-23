@@ -6,6 +6,7 @@ from handlers.menu import main_menu
 from handlers.post_creator import start_new_post, handle_post_flow
 from handlers.auto_poster import start_auto
 from handlers.live_post import start_live_post, handle_live_flow
+from handlers.scheduled import show_scheduled_lives
 from handlers.stats import channel_stats
 
 # ================= CONFIG =================
@@ -45,6 +46,9 @@ async def message_router(update, context):
 
 app.add_handler(CommandHandler("start", start))
 
+app.add_handler(
+    CallbackQueryHandler(show_scheduled_lives, pattern="scheduled_lives")
+)
 app.add_handler(CallbackQueryHandler(start_new_post, pattern="new_post"))
 app.add_handler(CallbackQueryHandler(start_auto, pattern="auto_post"))
 app.add_handler(CallbackQueryHandler(start_live_post, pattern="live_post"))
