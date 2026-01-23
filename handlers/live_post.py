@@ -4,7 +4,7 @@ from telegram.ext import ContextTypes
 from datetime import datetime
 
 CHANNEL_ID = int(os.getenv("CHANNEL_ID"))
-DEFAULT_TEXT = "🌟 لایو شروع شد!\n🎯 موضوع: {title}\n📺 لینک مشاهده: {link}"
+DEFAULT_TEXT = "🌟 لایو شروع شد!\n\n\n🎯 موضوع: {title}\n\n\n📺 لینک مشاهده:\n {link}\n\n\n@E_Shishehgar"
 
 
 # مرحله ۱: فعال‌سازی مود لایو
