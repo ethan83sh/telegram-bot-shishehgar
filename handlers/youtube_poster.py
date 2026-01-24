@@ -1,19 +1,30 @@
 # handlers/youtube_poster.py
+import json
 import os
 from telegram.ext import ContextTypes
-from telegram import Update
 from googleapiclient.discovery import build
 
 CHANNEL_ID = int(os.getenv("CHANNEL_ID"))
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
 YOUTUBE_CHANNEL_ID = os.getenv("YOUTUBE_CHANNEL_ID")
 
-# آخرین ویدیو ذخیره شده
-last_video_id = None
+STATUS_FILE = "handlers/last_video.json"  # مسیر فایل JSON
+
+# دریافت آخرین ویدیو
+def get_last_video_id():
+    if os.path.exists(STATUS_FILE):
+        with open(STATUS_FILE, "r") as f:
+            data = json.load(f)
+            return data.get("last_video_id", "")
+    return ""
+
+# ذخیره آخرین ویدیو
+def set_last_video_id(video_id):
+    with open(STATUS_FILE, "w") as f:
+        json.dump({"last_video_id": video_id}, f)
 
 # تابع چک کردن ویدیو جدید
 async def check_new_youtube_video(context: ContextTypes.DEFAULT_TYPE):
-    global last_video_id
 
     youtube = build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
 
@@ -26,7 +37,6 @@ async def check_new_youtube_video(context: ContextTypes.DEFAULT_TYPE):
         type="video"
     )
     response = request.execute()
-
     items = response.get("items", [])
     if not items:
         return
@@ -37,7 +47,10 @@ async def check_new_youtube_video(context: ContextTypes.DEFAULT_TYPE):
     description = video["snippet"]["description"]
     url = f"https://www.youtube.com/watch?v={video_id}"
 
-    if last_video_id != video_id:
+    # گرفتن آخرین ویدیوی ذخیره شده از فایل
+    last_video_id = get_last_video_id()
+
+    if video_id != last_video_id:
         # اگر ویدیو جدید هست → ارسال به تلگرام
         await context.bot.send_message(
             chat_id=CHANNEL_ID,
@@ -47,4 +60,5 @@ async def check_new_youtube_video(context: ContextTypes.DEFAULT_TYPE):
                  f"🔗 لینک: {url}\n\n"
                  f"@E_Shishehgar"
         )
-        last_video_id = video_id
+        # ذخیره آخرین ویدیو در فایل
+        set_last_video_id(video_id)
