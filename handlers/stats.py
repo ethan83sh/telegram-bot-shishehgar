@@ -17,16 +17,16 @@ async def channel_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         await client.start()
 
-        since = datetime.now() - timedelta(hours=24)
+        from datetime import datetime, timedelta, timezone
+            since = datetime.now(timezone.utc) - timedelta(hours=24)
         messages = []
 
         channel = await client.get_entity(CHANNEL_ID)
 
         async for message in client.iter_messages(channel):
             if message.date >= since and message.text:
-                messages.append(
-                    f"{message.date.strftime('%Y-%m-%d %H:%M')} | {message.text}"
-                )
+                messages.append(f"{message.date.strftime('%Y-%m-%d %H:%M')} | {message.text}")
+
 
         if not messages:
             text = "در 24 ساعت گذشته هیچ پستی وجود ندارد."
