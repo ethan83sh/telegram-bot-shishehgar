@@ -11,7 +11,7 @@ CHANNEL_ID = int(os.getenv("CHANNEL_ID"))
 
 SESSION_NAME = "bot_session"
 
-client = TelegramClient(SESSION_NAME, API_ID, API_HASH)
+client = TelegramClient("bot_session", API_ID, API_HASH)
 
 async def channel_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
