@@ -1,4 +1,4 @@
-# bot.py
+# main.py
 import os
 from telegram.ext import (
     Application,
@@ -32,6 +32,14 @@ async def start(update, context):
         "پنل مدیریت محتوا",
         reply_markup=main_menu()
     )
+
+#================ Youtube ===================
+from handlers.youtube_poster import check_new_youtube_video
+
+# هر 1 دقیقه کانال یوتوب رو بررسی می‌کنه
+app.job_queue.run_repeating(check_new_youtube_video, interval=60, first=10)
+
+
 
 # ================= MESSAGE ROUTER =================
 async def universal_message_router(update, context):
