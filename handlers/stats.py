@@ -20,10 +20,12 @@ async def channel_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
         since = datetime.now(timezone.utc) - timedelta(hours=24)
 
         # شمارش‌ها
-        text_count = 0
-        photo_count = 0
-        video_count = 0
-        link_count = 0
+        stats = {
+            "متنی": 0,
+            "عکس": 0,
+            "ویدیو": 0,
+            "لینک": 0
+        }
         total_count = 0
 
         channel = await client.get_entity(CHANNEL_ID)
@@ -31,25 +33,27 @@ async def channel_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
         async for message in client.iter_messages(channel):
             if message.date >= since:
                 total_count += 1
-                if message.text:
-                    # اگر متن فقط لینک باشد
-                    if message.text.startswith("http://") or message.text.startswith("https://"):
-                        link_count += 1
-                    else:
-                        text_count += 1
+                # پست عکس
                 if message.photo:
-                    photo_count += 1
+                    stats["عکس"] += 1
+                # پست ویدیو
                 if message.video:
-                    video_count += 1
+                    stats["ویدیو"] += 1
+                # متن و لینک
+                if message.text:
+                    if message.text.startswith("http://") or message.text.startswith("https://"):
+                        stats["لینک"] += 1
+                    else:
+                        stats["متنی"] += 1
 
-        # پاسخ
+        # آماده کردن متن جدول‌وار با ایموجی
         text = (
             f"📊 آمار ۲۴ ساعت گذشته کانال:\n\n"
-            f"تعداد کل پست‌ها: {total_count}\n"
-            f"پست متنی: {text_count}\n"
-            f"پست عکس: {photo_count}\n"
-            f"پست ویدیو: {video_count}\n"
-            f"پست لینک: {link_count}"
+            f"📝 پست متنی: {stats['متنی']}\n"
+            f"🖼️ پست عکس: {stats['عکس']}\n"
+            f"🎬 پست ویدیو: {stats['ویدیو']}\n"
+            f"🔗 پست لینک: {stats['لینک']}\n"
+            f"📌 تعداد کل پست‌ها: {total_count}"
         )
 
         await update.callback_query.message.reply_text(text)
