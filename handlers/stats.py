@@ -6,7 +6,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 API_ID = int(os.getenv("TG_API_ID"))
-API_HASH = os.getenv("TG_API_HASH"))
+API_HASH = os.getenv("TG_API_HASH")
 CHANNEL_ID = int(os.getenv("CHANNEL_ID"))
 
 # session_name می‌تواند هر چیزی باشد
