@@ -37,7 +37,7 @@ async def start(update, context):
 from handlers.youtube_poster import check_new_youtube_video
 
 # هر 1 دقیقه کانال یوتوب رو بررسی می‌کنه
-app.job_queue.run_repeating(check_new_youtube_video, interval=60, first=10)
+app.job_queue.run_repeating(check_new_youtube_video, interval=30, first=10)
 
 
 
