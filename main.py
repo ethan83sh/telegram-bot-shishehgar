@@ -33,23 +33,19 @@ async def start(update, context):
         reply_markup=main_menu()
     )
 
-#================ Youtube ===================
+#================ Youtube RSS/Poster ===================
 from handlers.youtube_poster import check_new_youtube_video
 
-# هر 60 ثانیه کانال یوتوب رو بررسی می‌کنه (بهینه‌ترین حالت)
+# JobQueue: بررسی کانال یوتیوب هر 60 ثانیه
 app.job_queue.run_repeating(
     check_new_youtube_video,
-    interval=60,
+    interval=60,  # می‌تونید 120 یا 180 ثانیه هم بذارید تا quota یوتیوب نره بالا
     first=10
 )
-
-
-
 
 # ================= MESSAGE ROUTER =================
 async def universal_message_router(update, context):
     mode = context.user_data.get("mode")
-
     if mode == "new_post":
         await handle_post_flow(update, context)
     elif mode == "live_post":
@@ -58,16 +54,9 @@ async def universal_message_router(update, context):
         await handle_auto_flow(update, context)
 
 # ================= HANDLERS =================
-# دستور /start
 app.add_handler(CommandHandler("start", start))
-
-# Scheduled live (مشاهده لیست لایوهای برنامه‌ریزی شده)
 app.add_handler(CallbackQueryHandler(show_scheduled_lives, pattern="scheduled_lives"))
-
-# پست دستی
 app.add_handler(CallbackQueryHandler(start_new_post, pattern="new_post"))
-
-# پست خودکار
 app.add_handler(CallbackQueryHandler(start_auto, pattern="auto_post"))
 app.add_handler(
     CallbackQueryHandler(
@@ -75,15 +64,8 @@ app.add_handler(
         pattern="^(view_interval|change_interval|view_text|change_text|reset_start|stop_auto)$"
     )
 )
-
-# پست لایو
 app.add_handler(CallbackQueryHandler(start_live_post, pattern="live_post"))
-
-# دکمه‌های منوی آمار
 app.add_handler(CallbackQueryHandler(channel_stats, pattern="stats"))
-
-
-# فقط یک MessageHandler برای همه پیام‌های متنی
 app.add_handler(MessageHandler(filters.ALL, universal_message_router))
 
 # ================= RUN =================
