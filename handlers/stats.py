@@ -7,24 +7,31 @@ from telegram.ext import ContextTypes
 
 # ================= CONFIG TELETHON =================
 API_ID = int(os.getenv("TG_API_ID"))
-API_HASH = os.getenv("TG_API_HASH")
+API_HASH = os.getenv("TG_API_HASH"))
 CHANNEL_ID = int(os.getenv("CHANNEL_ID"))  # عدد ID کانال
 
-# مسیر ثابت فایل session
-SESSION_FILE = "handlers/bot_session"  # اگر فایل bot_session.session داری، فقط 'bot_session' بذار
+# مسیر فایل session از متغیر محیطی میاد
+SESSION_FILE = os.getenv("TG_SESSION_PATH", "bot_session.session")
 
-# client با مسیر ثابت session
+# ساخت client با session مشخص
 client = TelegramClient(SESSION_FILE, API_ID, API_HASH)
 
 # ================= FUNCTION =================
 async def channel_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        # بدون نیاز به وارد کردن شماره یا رمز دو مرحله‌ای
-        await client.start()
+        # اگر session هنوز استارت نشده
+        if not client.is_connected():
+            await client.start()
 
         since = datetime.now(timezone.utc) - timedelta(hours=24)
 
-        stats = {"متنی": 0, "عکس": 0, "ویدیو": 0, "لینک": 0}
+        # شمارش‌ها
+        stats = {
+            "متنی": 0,
+            "عکس": 0,
+            "ویدیو": 0,
+            "لینک": 0
+        }
         total_count = 0
 
         channel = await client.get_entity(CHANNEL_ID)
