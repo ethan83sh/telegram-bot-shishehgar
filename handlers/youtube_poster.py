@@ -1,60 +1,53 @@
 # handlers/youtube_poster.py
+import feedparser
 import json
 import os
-from telegram.ext import ContextTypes
-from googleapiclient.discovery import build
 
 CHANNEL_ID = int(os.getenv("CHANNEL_ID"))
-YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
 YOUTUBE_CHANNEL_ID = os.getenv("YOUTUBE_CHANNEL_ID")
 
+RSS_URL = f"https://www.youtube.com/feeds/videos.xml?channel_id={YOUTUBE_CHANNEL_ID}"
 STATUS_FILE = "handlers/last_video.json"
+
 
 def get_last_video_id():
     if os.path.exists(STATUS_FILE):
         with open(STATUS_FILE, "r") as f:
-            return json.load(f).get("last_video_id", "")
+            data = json.load(f)
+            return data.get("last_video_id", "")
     return ""
+
 
 def set_last_video_id(video_id):
     with open(STATUS_FILE, "w") as f:
         json.dump({"last_video_id": video_id}, f)
 
-async def check_new_youtube_video(context: ContextTypes.DEFAULT_TYPE):
-    try:
-        youtube = build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
 
-        # فقط پلی‌لیست آپلودهای کانال
-        channel = youtube.channels().list(
-            part="contentDetails",
-            id=YOUTUBE_CHANNEL_ID
-        ).execute()
+async def check_new_youtube_video(context):
+    feed = feedparser.parse(RSS_URL)
 
-        uploads_playlist = channel["items"][0]["contentDetails"]["relatedPlaylists"]["uploads"]
+    if not feed.entries:
+        return
 
-        videos = youtube.playlistItems().list(
-            part="snippet",
-            playlistId=uploads_playlist,
-            maxResults=1
-        ).execute()
+    entry = feed.entries[0]
 
-        video = videos["items"][0]
-        video_id = video["snippet"]["resourceId"]["videoId"]
-        title = video["snippet"]["title"]
-        description = video["snippet"]["description"]
-        url = f"https://www.youtube.com/watch?v={video_id}"
+    video_id = entry.yt_videoid
+    title = entry.title
+    url = entry.link
 
-        last_video_id = get_last_video_id()
+    last_video_id = get_last_video_id()
 
-        if video_id != last_video_id:
-            await context.bot.send_message(
-                chat_id=CHANNEL_ID,
-                text=f"🎬 ویدیوی جدید منتشر شد!\n\n"
-                     f"📌 {title}\n\n"
-                     f"{description}\n\n"
-                     f"🔗 {url}"
-            )
-            set_last_video_id(video_id)
+    if video_id != last_video_id:
+        await context.bot.send_message(
+            chat_id=CHANNEL_ID,
+            text=f"""🎬 ویدیوی جدید منتشر شد!
 
-    except Exception as e:
-        print("YouTube error:", e)
+📌 تیتر: {title}
+
+🔗 لینک:
+{url}
+
+@E_Shishehgar"""
+        )
+
+        set_last_video_id(video_id)
