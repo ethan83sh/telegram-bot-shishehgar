@@ -7,7 +7,7 @@ from telegram.ext import ContextTypes
 
 # ================= CONFIG TELETHON =================
 API_ID = int(os.getenv("TG_API_ID"))
-API_HASH = os.getenv("TG_API_HASH"))
+API_HASH = os.getenv("TG_API_HASH")
 CHANNEL_ID = int(os.getenv("CHANNEL_ID"))  # عدد ID کانال
 SESSION_FILE = "bot_session.session"       # مسیر فایل session ساخته شده
 
