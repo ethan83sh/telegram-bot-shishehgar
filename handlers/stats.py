@@ -7,25 +7,24 @@ from telegram.ext import ContextTypes
 
 # ================= CONFIG TELETHON =================
 API_ID = int(os.getenv("TG_API_ID"))
-API_HASH = os.getenv("TG_API_HASH")
+API_HASH = os.getenv("TG_API_HASH"))
 CHANNEL_ID = int(os.getenv("CHANNEL_ID"))  # عدد ID کانال
 
-client = TelegramClient('bot_session', API_ID, API_HASH)
+# مسیر ثابت فایل session
+SESSION_FILE = "handlers/bot_session"  # اگر فایل bot_session.session داری، فقط 'bot_session' بذار
+
+# client با مسیر ثابت session
+client = TelegramClient(SESSION_FILE, API_ID, API_HASH)
 
 # ================= FUNCTION =================
 async def channel_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
+        # بدون نیاز به وارد کردن شماره یا رمز دو مرحله‌ای
         await client.start()
 
         since = datetime.now(timezone.utc) - timedelta(hours=24)
 
-        # شمارش‌ها
-        stats = {
-            "متنی": 0,
-            "عکس": 0,
-            "ویدیو": 0,
-            "لینک": 0
-        }
+        stats = {"متنی": 0, "عکس": 0, "ویدیو": 0, "لینک": 0}
         total_count = 0
 
         channel = await client.get_entity(CHANNEL_ID)
@@ -33,20 +32,16 @@ async def channel_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
         async for message in client.iter_messages(channel):
             if message.date >= since:
                 total_count += 1
-                # پست عکس
                 if message.photo:
                     stats["عکس"] += 1
-                # پست ویدیو
                 if message.video:
                     stats["ویدیو"] += 1
-                # متن و لینک
                 if message.text:
                     if message.text.startswith("http://") or message.text.startswith("https://"):
                         stats["لینک"] += 1
                     else:
                         stats["متنی"] += 1
 
-        # آماده کردن متن جدول‌وار با ایموجی
         text = (
             f"📊 آمار ۲۴ ساعت گذشته کانال:\n\n"
             f"📝 پست متنی: {stats['متنی']}\n"
