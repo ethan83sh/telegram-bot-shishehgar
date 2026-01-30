@@ -33,7 +33,6 @@ CB_LIVE_LIST = "LIVE_LIST"
 
 # Live list navigation
 # LIVE_LIST:idx:<n>
-# Live item ops:
 # LIVE_DEL:<id>
 # LIVE_EDIT:<id>
 # LIVE_EDIT_FIELD:<id>:<field>
@@ -42,6 +41,7 @@ def kb_back_main():
     return InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ بازگشت به منو اصلی", callback_data=CB_MAIN)]])
 
 def kb_main():
+    # نکته مهم: اینجا باید callback_data دقیقاً CB_LIVE_MENU باشد
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("📤 ارسال پست", callback_data=CB_POST_MENU)],
         [InlineKeyboardButton("⏱ پست خودکار", callback_data=CB_AUTO_MENU)],
@@ -85,22 +85,24 @@ def kb_live_menu():
         [InlineKeyboardButton("⬅️ بازگشت", callback_data=CB_MAIN)],
     ])
 
-
 def kb_live_nav(idx: int, total: int, live_id: str):
     prev_idx = max(idx - 1, 0)
     next_idx = min(idx + 1, max(total - 1, 0))
     buttons = []
-    row = []
-    row.append(InlineKeyboardButton("⬅️ قبلی", callback_data=f"LIVE_LIST:idx:{prev_idx}"))
-    row.append(InlineKeyboardButton(f"{idx+1}/{total}", callback_data="NOP"))
-    row.append(InlineKeyboardButton("بعدی ➡️", callback_data=f"LIVE_LIST:idx:{next_idx}"))
-    buttons.append(row)
+
+    buttons.append([
+        InlineKeyboardButton("⬅️ قبلی", callback_data=f"LIVE_LIST:idx:{prev_idx}"),
+        InlineKeyboardButton(f"{idx+1}/{total}", callback_data="NOP"),
+        InlineKeyboardButton("بعدی ➡️", callback_data=f"LIVE_LIST:idx:{next_idx}"),
+    ])
 
     buttons.append([
         InlineKeyboardButton("🗑 حذف لایو", callback_data=f"LIVE_DEL:{live_id}"),
         InlineKeyboardButton("✏️ تغییر لایو", callback_data=f"LIVE_EDIT:{live_id}"),
     ])
+
     buttons.append([InlineKeyboardButton("⬅️ بازگشت به منوی لایو", callback_data=CB_LIVE_MENU)])
+
     return InlineKeyboardMarkup(buttons)
 
 def kb_live_edit_fields(live_id: str):
