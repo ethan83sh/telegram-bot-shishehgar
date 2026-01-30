@@ -7,12 +7,12 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
+
 from handlers.menu import main_menu
-from handlers.post_creator import start_new_post, handle_post_flow
-from handlers.auto_poster import start_auto, handle_auto_menu, handle_auto_flow
+from handlers.manual_post import start_manual_post, handle_manual_flow
+from handlers.auto_post import start_auto_post, handle_auto_flow
 from handlers.live_post import start_live_post, handle_live_flow
-from handlers.scheduled import show_scheduled_lives
-from handlers.stats import channel_stats
+from handlers.timezone import show_timezone_menu, handle_timezone_flow
 
 # ================= CONFIG =================
 TOKEN = os.getenv("BOT_TOKEN")
@@ -33,40 +33,28 @@ async def start(update, context):
         reply_markup=main_menu()
     )
 
-#================ Youtube RSS/Poster ===================
-from handlers.youtube_poster import check_new_youtube_video
-
-# JobQueue: بررسی کانال یوتیوب هر 60 ثانیه
-app.job_queue.run_repeating(
-    check_new_youtube_video,
-    interval=60,  # می‌تونید 120 یا 180 ثانیه هم بذارید تا quota یوتیوب نره بالا
-    first=10
-)
-
 # ================= MESSAGE ROUTER =================
-async def universal_message_router(update, context):
+async def universal_router(update, context):
     mode = context.user_data.get("mode")
-    if mode == "new_post":
-        await handle_post_flow(update, context)
-    elif mode == "live_post":
-        await handle_live_flow(update, context)
+
+    if mode == "manual_post":
+        await handle_manual_flow(update, context)
     elif mode == "auto_post":
         await handle_auto_flow(update, context)
+    elif mode == "live_post":
+        await handle_live_flow(update, context)
+    elif mode == "timezone":
+        await handle_timezone_flow(update, context)
 
 # ================= HANDLERS =================
 app.add_handler(CommandHandler("start", start))
-app.add_handler(CallbackQueryHandler(show_scheduled_lives, pattern="scheduled_lives"))
-app.add_handler(CallbackQueryHandler(start_new_post, pattern="new_post"))
-app.add_handler(CallbackQueryHandler(start_auto, pattern="auto_post"))
-app.add_handler(
-    CallbackQueryHandler(
-        handle_auto_menu,
-        pattern="^(view_interval|change_interval|view_text|change_text|reset_start|stop_auto)$"
-    )
-)
+
+app.add_handler(CallbackQueryHandler(start_manual_post, pattern="manual_post"))
+app.add_handler(CallbackQueryHandler(start_auto_post, pattern="auto_post"))
 app.add_handler(CallbackQueryHandler(start_live_post, pattern="live_post"))
-app.add_handler(CallbackQueryHandler(channel_stats, pattern="stats"))
-app.add_handler(MessageHandler(filters.ALL, universal_message_router))
+app.add_handler(CallbackQueryHandler(show_timezone_menu, pattern="timezone"))
+
+app.add_handler(MessageHandler(filters.ALL, universal_router))
 
 # ================= RUN =================
 app.run_polling()
