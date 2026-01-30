@@ -1,4 +1,3 @@
-# storage.py
 import json
 import os
 import sqlite3
@@ -23,7 +22,11 @@ def get_raw(key: str) -> Optional[str]:
 def set_raw(key: str, value: str) -> None:
     conn = _conn()
     try:
-        conn.execute("INSERT INTO kv(k,v) VALUES(?,?) ON CONFLICT(k) DO UPDATE SET v=excluded.v", (key, value))
+        conn.execute(
+            "INSERT INTO kv(k,v) VALUES(?,?) "
+            "ON CONFLICT(k) DO UPDATE SET v=excluded.v",
+            (key, value),
+        )
         conn.commit()
     finally:
         conn.close()
