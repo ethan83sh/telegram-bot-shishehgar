@@ -1,57 +1,76 @@
 # storage.py
 import json
-from typing import Any, Optional, List
+import os
+import sqlite3
+from typing import Any, List, Optional
 
-from replit import db
+DB_PATH = os.getenv("BOT_DB_PATH", "bot.db")
+
+def _conn():
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute("CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT NOT NULL)")
+    return conn
+
+def get_raw(key: str) -> Optional[str]:
+    conn = _conn()
+    try:
+        cur = conn.execute("SELECT v FROM kv WHERE k=?", (key,))
+        row = cur.fetchone()
+        return row[0] if row else None
+    finally:
+        conn.close()
+
+def set_raw(key: str, value: str) -> None:
+    conn = _conn()
+    try:
+        conn.execute("INSERT INTO kv(k,v) VALUES(?,?) ON CONFLICT(k) DO UPDATE SET v=excluded.v", (key, value))
+        conn.commit()
+    finally:
+        conn.close()
 
 def get_str(key: str, default: str) -> str:
-    return str(db.get(key, default))
+    v = get_raw(key)
+    return default if v is None else str(v)
 
 def set_str(key: str, value: str) -> None:
-    db[key] = str(value)
+    set_raw(key, str(value))
 
 def get_int(key: str, default: int) -> int:
-    v = db.get(key, default)
+    v = get_raw(key)
     try:
-        return int(v)
+        return default if v is None else int(v)
     except Exception:
         return default
 
 def set_int(key: str, value: int) -> None:
-    db[key] = int(value)
+    set_raw(key, str(int(value)))
 
 def get_bool(key: str, default: bool) -> bool:
-    v = db.get(key, default)
-    if isinstance(v, bool):
-        return v
-    if isinstance(v, str):
-        return v.lower() in ("1", "true", "yes", "on")
-    return bool(v)
+    v = get_raw(key)
+    if v is None:
+        return default
+    return v.lower() in ("1", "true", "yes", "on")
 
 def set_bool(key: str, value: bool) -> None:
-    db[key] = bool(value)
+    set_raw(key, "true" if value else "false")
 
 def get_json(key: str, default: Any) -> Any:
-    raw = db.get(key, None)
-    if raw is None:
+    v = get_raw(key)
+    if v is None:
         return default
-    if isinstance(raw, (dict, list)):
-        return raw
     try:
-        return json.loads(raw)
+        return json.loads(v)
     except Exception:
         return default
 
 def set_json(key: str, value: Any) -> None:
-    db[key] = json.dumps(value, ensure_ascii=False)
+    set_raw(key, json.dumps(value, ensure_ascii=False))
 
 def get_list(key: str, default: Optional[List[str]] = None) -> List[str]:
     if default is None:
         default = []
     v = get_json(key, default)
-    if isinstance(v, list):
-        return v
-    return default
+    return v if isinstance(v, list) else default
 
 def set_list(key: str, value: List[str]) -> None:
     set_json(key, value)
