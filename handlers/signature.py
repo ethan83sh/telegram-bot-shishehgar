@@ -8,7 +8,7 @@ from telegram.ext import ContextTypes
 SIGNATURE_FILE = "storage/signature.json"
 
 # مقدار پیش‌فرض جدید
-DEFAULT_SIGNATURE = "
+DEFAULT_SIGNATURE = """
 #شاهزاده_رضا_پهلوی
 #انقلاب_شیروخورشید
 #ایرانو_پس_میگیریم
@@ -25,7 +25,7 @@ instagram.com/officialrezapahlavi
 ───────────────── 
 
 @Iran_Tajdar
-".strip()
+""".strip()
 
 # خواندن امضا از فایل json یا بازگشت به پیش‌فرض
 def get_signature():
