@@ -11,7 +11,7 @@ from keyboards import (
 )
 import menus
 import jobs
-# import conversations  # مرحله بعد اضافه می‌کنیم
+import conversations
 
 
 def ensure_defaults():
@@ -50,7 +50,7 @@ def build_app() -> Application:
     app.add_handler(CallbackQueryHandler(menus.menu_router, pattern=pattern))
 
     # ConversationHandlerها را در فایل conversations.py اضافه می‌کنیم (مرحله بعد)
-    # app.add_handlers(conversations.build_conversations())
+    app.add_handlers(conversations.build_conversations())
 
     # Job RSS همیشه روشن
     app.job_queue.run_repeating(jobs.youtube_rss_job, interval=60, first=10, name=jobs.YTRSS_JOB_NAME)
