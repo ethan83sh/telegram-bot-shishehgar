@@ -1,83 +1,90 @@
 # handlers/auto_post.py
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ContextTypes
+import os
+import json
+from datetime import datetime, timedelta
+from telegram import Update
+from telegram.ext import ContextTypes, Job
 
-# تنظیمات پیش‌فرض
-DEFAULT_INTERVAL = 13 * 60  # دقیقه (۱۳ ساعت)
-DEFAULT_TEXT = "این یک پست خودکار است"
+STATUS_FILE = "handlers/auto_post_status.json"
 
-# ذخیره در حافظه (بعداً می‌تونیم ببریمش روی فایل/دیتابیس)
-auto_settings = {
-    "interval": DEFAULT_INTERVAL,
-    "text": DEFAULT_TEXT,
-    "active": False
-}
+# ================= CONFIG =================
+CHANNEL_ID = int(os.getenv("CHANNEL_ID"))
 
-# ---------- منوی پست خودکار ----------
-def auto_menu():
-    keyboard = [
-        [InlineKeyboardButton("⏱ مشاهده بازه زمانی", callback_data="auto_view_interval")],
-        [InlineKeyboardButton("✏️ تغییر بازه زمانی", callback_data="auto_change_interval")],
-        [InlineKeyboardButton("📝 مشاهده متن پست", callback_data="auto_view_text")],
-        [InlineKeyboardButton("✍️ تغییر متن پست", callback_data="auto_change_text")],
-        [InlineKeyboardButton("▶️ ارسال پست خودکار", callback_data="auto_start")],
-        [InlineKeyboardButton("⛔ توقف ارسال خودکار", callback_data="auto_stop")],
-    ]
-    return InlineKeyboardMarkup(keyboard)
+# بارگذاری وضعیت
+def load_status():
+    if os.path.exists(STATUS_FILE):
+        with open(STATUS_FILE, "r") as f:
+            return json.load(f)
+    return {"interval": 13*60*60, "text": "متن پیشفرض پست خودکار", "next_send": None, "active": True}
 
-# ---------- شروع ----------
+# ذخیره وضعیت
+def save_status(data):
+    with open(STATUS_FILE, "w") as f:
+        json.dump(data, f)
+
+# ================= HANDLERS =================
 async def start_auto_post(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data["mode"] = "auto_menu"
     await update.callback_query.message.reply_text(
-        "🤖 مدیریت پست خودکار:",
-        reply_markup=auto_menu()
+        "📌 منوی پست خودکار",
+        reply_markup=None  # بعداً میشه inline کیبورد اضافه کرد
     )
 
-# ---------- هندلر اصلی ----------
 async def handle_auto_flow(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    data = query.data
+    mode = context.user_data.get("mode")
+    status = load_status()
 
-    # مشاهده بازه
-    if data == "auto_view_interval":
-        minutes = auto_settings["interval"]
-        await query.message.reply_text(f"⏱ بازه فعلی: {minutes} دقیقه")
+    # مشاهده بازه زمانی
+    if mode == "view_interval":
+        hours = status["interval"] / 3600
+        await update.message.reply_text(f"⏱️ بازه زمانی فعلی: {hours} ساعت")
 
-    # تغییر بازه
-    elif data == "auto_change_interval":
-        context.user_data["mode"] = "auto_set_interval"
-        await query.message.reply_text("عدد بازه جدید را بر حسب دقیقه وارد کن:")
-
-    # مشاهده متن
-    elif data == "auto_view_text":
-        await query.message.reply_text(f"📝 متن فعلی:\n\n{auto_settings['text']}")
-
-    # تغییر متن
-    elif data == "auto_change_text":
-        context.user_data["mode"] = "auto_set_text"
-        await query.message.reply_text("متن جدید پست خودکار را ارسال کن:")
-
-    # شروع
-    elif data == "auto_start":
-        auto_settings["active"] = True
-        await query.message.reply_text("▶️ ارسال خودکار فعال شد (تایمر ریست شد)")
-
-    # توقف
-    elif data == "auto_stop":
-        auto_settings["active"] = False
-        await query.message.reply_text("⛔ ارسال خودکار متوقف شد")
-
-    # ورودی عدد بازه
-    elif context.user_data.get("mode") == "auto_set_interval":
+    # تغییر بازه زمانی
+    elif mode == "change_interval":
         try:
-            minutes = int(update.message.text)
-            auto_settings["interval"] = minutes
-            context.user_data["mode"] = None
-            await update.message.reply_text(f"✅ بازه جدید ثبت شد: {minutes} دقیقه")
+            hours = float(update.message.text)
+            status["interval"] = int(hours * 3600)
+            save_status(status)
+            await update.message.reply_text(f"✅ بازه زمانی به {hours} ساعت تغییر کرد")
+            context.user_data["mode"] = "auto_menu"
         except:
-            await update.message.reply_text("❌ فقط عدد وارد کن")
+            await update.message.reply_text("❌ مقدار اشتباه است")
 
-    # ورودی متن
-    elif context.user_data.get("mode") == "auto_set_text":
-        auto_settings["text"] = update.message.text
-        context.user_data["mode"] = None
-        await update.message.reply_text("✅ متن جدید ثبت شد")
+    # مشاهده متن پست خودکار
+    elif mode == "view_text":
+        await update.message.reply_text(f"📝 متن پست خودکار فعلی:\n{status['text']}")
+
+    # تغییر متن پست خودکار
+    elif mode == "change_text":
+        status["text"] = update.message.text
+        save_status(status)
+        await update.message.reply_text("✅ متن پست خودکار تغییر کرد")
+        context.user_data["mode"] = "auto_menu"
+
+    # ارسال دستی (ریست تایمر)
+    elif mode == "send_now":
+        await send_auto_post(context)
+        status["next_send"] = (datetime.utcnow() + timedelta(seconds=status["interval"])).isoformat()
+        save_status(status)
+        context.user_data["mode"] = "auto_menu"
+        await update.message.reply_text("✅ پست خودکار ارسال شد و تایمر ریست شد")
+
+    # استاپ
+    elif mode == "stop_auto":
+        status["active"] = False
+        save_status(status)
+        context.user_data["mode"] = "auto_menu"
+        await update.message.reply_text("⏹️ ارسال خودکار متوقف شد")
+
+# ================= JOB =================
+async def send_auto_post(context: ContextTypes.DEFAULT_TYPE):
+    status = load_status()
+    if not status.get("active", True):
+        return
+
+    text = status.get("text", "متن پیشفرض پست خودکار")
+    await context.bot.send_message(chat_id=CHANNEL_ID, text=text)
+
+    # ریست تایمر بعد از ارسال
+    status["next_send"] = (datetime.utcnow() + timedelta(seconds=status["interval"])).isoformat()
+    save_status(status)
