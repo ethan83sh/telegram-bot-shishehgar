@@ -36,11 +36,13 @@ def _sorted_live_events():
 async def menu_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
-    data = q.data
+    data = q.data or ""
 
+    # NOP برای دکمه وسط صفحه‌بندی
     if data == "NOP":
         return
 
+    # ---- Main navigation ----
     if data == CB_MAIN:
         await q.edit_message_text("منو اصلی:", reply_markup=kb_main())
         return
@@ -119,7 +121,7 @@ async def menu_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
         e = events[idx]
 
         await q.edit_message_text(
-            f"🔴 لایو پیش‌رو\n\n"
+            "🔴 لایو پیش‌رو\n\n"
             f"🕒 زمان: {e['dt']}\n"
             f"🎯 موضوع: {e['title']}\n"
             f"📺 لینک: {e['link']}\n",
@@ -135,7 +137,7 @@ async def menu_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
         events = [e for e in events if e.get("id") != live_id]
         jobs.save_live_events(events)
 
-        # حذف job از صف (schedule_removal) [web:12]
+        # حذف job از صف
         for j in context.application.job_queue.get_jobs_by_name(jobs.live_job_name(live_id)):
             j.schedule_removal()
 
@@ -147,8 +149,7 @@ async def menu_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await q.edit_message_text("کدام بخش را می‌خواهی تغییر بدهی؟", reply_markup=kb_live_edit_fields(live_id))
         return
 
-    # تغییر فیلدها را conversations.py انجام می‌دهد
-    if data.startswith("LIVE_EDIT_FIELD:"):
-        # اینجا فقط پیام بدهیم؛ Conversation مربوطه آن را می‌گیرد
-        await q.edit_message_text("در حال ورود به حالت تغییر... ⏳", reply_markup=kb_back_main())
-        return
+    # مهم: LIVE_EDIT_FIELD را اینجا هندل نکن!
+    # باید برود داخل ConversationHandler (conversations.py)
+
+    await q.edit_message_text("این دکمه پشتیبانی نمی‌شود یا منقضی شده است.", reply_markup=kb_back_main())
