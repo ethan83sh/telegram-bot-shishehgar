@@ -85,6 +85,7 @@ def kb_live_menu():
         [InlineKeyboardButton("⬅️ بازگشت", callback_data=CB_MAIN)],
     ])
 
+
 def kb_live_nav(idx: int, total: int, live_id: str):
     prev_idx = max(idx - 1, 0)
     next_idx = min(idx + 1, max(total - 1, 0))
