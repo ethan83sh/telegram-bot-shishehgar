@@ -1,8 +1,4 @@
 python-telegram-bot[job-queue]==20.7
-telethon
-pytz
-requests==2.31.0
-python-dotenv==1.0.0
-google-api-python-client==2.99.0
-instagrapi
-feedparser
+replit==4.1.0
+feedparser==6.0.11
+python-dotenv==1.0.1
