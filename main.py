@@ -2,16 +2,11 @@
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler
 
+import menus
+import conversations
+import jobs
 import storage
 from config import BOT_TOKEN, ADMIN_ID, CHANNEL_ID, DEFAULT_TZ, DEFAULT_AUTO_TEXT, DEFAULT_AUTO_INTERVAL_MIN
-from keyboards import (
-    CB_MAIN, CB_POST_MENU, CB_AUTO_MENU, CB_TZ_MENU,
-    CB_SIG_SHOW, CB_AUTO_SEND_RESET, CB_AUTO_STOP,
-    CB_AUTO_INTERVAL_SHOW, CB_AUTO_TEXT_SHOW, CB_TZ_SHOW,
-)
-import menus
-import jobs
-import conversations
 
 
 def ensure_defaults():
@@ -25,6 +20,8 @@ def ensure_defaults():
         storage.set_str("auto_text", DEFAULT_AUTO_TEXT)
     if storage.get_json("yt_last_ids", None) is None:
         storage.set_list("yt_last_ids", [])
+    if storage.get_json("live_events", None) is None:
+        storage.set_json("live_events", [])
     storage.set_bool("auto_enabled", storage.get_bool("auto_enabled", False))
 
 
@@ -43,13 +40,18 @@ def build_app() -> Application:
 
     app = Application.builder().token(BOT_TOKEN).build()
 
+    # /start
     app.add_handler(CommandHandler("start", start))
 
-    # منو (کلیک‌ها)
-    pattern = "^(MAIN|POST_MENU|AUTO_MENU|TZ_MENU|SIG_SHOW|AUTO_SEND_RESET|AUTO_STOP|AUTO_INTERVAL_SHOW|AUTO_TEXT_SHOW|TZ_SHOW)$"
+    # Router فقط برای منوها و اکشن‌های لیستی/حذف/ویرایش (نه LIVE_NEW و نه LIVE_TODAY و نه LIVE_EDIT_FIELD)
+    pattern = (
+        "^(MAIN|POST_MENU|AUTO_MENU|TZ_MENU|LIVE_MENU|"
+        "SIG_SHOW|AUTO_SEND_RESET|AUTO_STOP|AUTO_INTERVAL_SHOW|AUTO_TEXT_SHOW|TZ_SHOW|"
+        "LIVE_LIST:idx:.*|LIVE_DEL:.*|LIVE_EDIT:.*|NOP)$"
+    )
     app.add_handler(CallbackQueryHandler(menus.menu_router, pattern=pattern))
 
-    # ConversationHandlerها را در فایل conversations.py اضافه می‌کنیم (مرحله بعد)
+    # Conversationها (از جمله LIVE_NEW و LIVE_TODAY:* و LIVE_EDIT_FIELD:*)
     app.add_handlers(conversations.build_conversations())
 
     # Job RSS همیشه روشن
@@ -58,7 +60,12 @@ def build_app() -> Application:
     # Restore auto job
     if storage.get_bool("auto_enabled", False):
         interval_min = storage.get_int("auto_interval_minutes", DEFAULT_AUTO_INTERVAL_MIN)
-        app.job_queue.run_repeating(jobs.auto_post_job, interval=interval_min * 60, first=interval_min * 60, name=jobs.AUTO_JOB_NAME)
+        app.job_queue.run_repeating(
+            jobs.auto_post_job,
+            interval=interval_min * 60,
+            first=interval_min * 60,
+            name=jobs.AUTO_JOB_NAME,
+        )
 
     return app
 
