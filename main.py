@@ -49,7 +49,7 @@ def build_app() -> Application:
     pattern = "^(MAIN|POST_MENU|AUTO_MENU|TZ_MENU|SIG_SHOW|AUTO_SEND_RESET|AUTO_STOP|AUTO_INTERVAL_SHOW|AUTO_TEXT_SHOW|TZ_SHOW)$"
     app.add_handler(CallbackQueryHandler(menus.menu_router, pattern=pattern))
 
-    # ConversationHandlerها را در فایل conversations.py اضافه می‌کنیم (مرحله بعد)
+    ConversationHandlerها را در فایل conversations.py اضافه می‌کنیم (مرحله بعد)
     app.add_handlers(conversations.build_conversations())
 
     # Job RSS همیشه روشن
