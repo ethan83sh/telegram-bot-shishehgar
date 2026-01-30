@@ -3,137 +3,105 @@ import os
 import json
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
+from handlers.signature import get_signature
 
-# ================= مسیر فایل‌ها =================
-STORAGE_DIR = "storage"
-AUTO_TEXT_FILE = os.path.join(STORAGE_DIR, "auto_text.txt")
-SIGNATURE_FILE = os.path.join(STORAGE_DIR, "signature.txt")
-JSON_FILE = os.path.join(STORAGE_DIR, "auto_settings.json")
+# مسیر فایل ذخیره تنظیمات خودکار
+AUTO_FILE = "storage/auto_settings.json"
 
-# ================= بارگذاری دیفالت =================
-def load_default_text():
-    if os.path.exists(AUTO_TEXT_FILE):
-        with open(AUTO_TEXT_FILE, "r", encoding="utf-8") as f:
-            return f.read().strip()
-    return "این یک پست خودکار است"
-
-def load_default_signature():
-    if os.path.exists(SIGNATURE_FILE):
-        with open(SIGNATURE_FILE, "r", encoding="utf-8") as f:
-            return f.read().strip()
-    return "@YourChannel"
-
-# ================= بارگذاری و ذخیره JSON =================
-def load_settings():
-    if os.path.exists(JSON_FILE):
-        with open(JSON_FILE, "r", encoding="utf-8") as f:
+# ---------- بارگذاری تنظیمات ----------
+def load_auto_settings():
+    if os.path.exists(AUTO_FILE):
+        with open(AUTO_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
-    # اگر فایل وجود نداشت → استفاده از دیفالت و ساخت JSON
-    settings = {
-        "interval": 13 * 60,  # پیش‌فرض 13 ساعت
-        "text": load_default_text(),
-        "signature": load_default_signature(),
+    # تنظیمات پیش‌فرض
+    return {
+        "interval": 13 * 60,  # دقیقه (13 ساعت)
+        "text": "این یک پست خودکار است",
         "active": False
     }
-    save_settings(settings)
-    return settings
 
-def save_settings(settings):
-    with open(JSON_FILE, "w", encoding="utf-8") as f:
+# ---------- ذخیره تنظیمات ----------
+def save_auto_settings(settings):
+    with open(AUTO_FILE, "w", encoding="utf-8") as f:
         json.dump(settings, f, ensure_ascii=False, indent=2)
 
-# ================= منوی پست خودکار =================
+# ---------- منوی پست خودکار ----------
 def auto_menu():
     keyboard = [
         [InlineKeyboardButton("⏱ مشاهده بازه زمانی", callback_data="auto_view_interval")],
         [InlineKeyboardButton("✏️ تغییر بازه زمانی", callback_data="auto_change_interval")],
         [InlineKeyboardButton("📝 مشاهده متن پست", callback_data="auto_view_text")],
         [InlineKeyboardButton("✍️ تغییر متن پست", callback_data="auto_change_text")],
-        [InlineKeyboardButton("🖋 مشاهده امضا", callback_data="auto_view_signature")],
-        [InlineKeyboardButton("✏️ تغییر امضا", callback_data="auto_change_signature")],
         [InlineKeyboardButton("▶️ ارسال پست خودکار", callback_data="auto_start")],
         [InlineKeyboardButton("⛔ توقف ارسال خودکار", callback_data="auto_stop")],
     ]
     return InlineKeyboardMarkup(keyboard)
 
-# ================= شروع منو =================
+# ---------- شروع ----------
 async def start_auto_post(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.callback_query.message.reply_text(
         "🤖 مدیریت پست خودکار:",
         reply_markup=auto_menu()
     )
 
-# ================= هندلر اصلی =================
+# ---------- هندلر اصلی ----------
 async def handle_auto_flow(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    settings = load_settings()
     query = update.callback_query
-    data = query.data if query else None
+    data = query.data
+    settings = load_auto_settings()
 
     # مشاهده بازه
     if data == "auto_view_interval":
         await query.message.reply_text(f"⏱ بازه فعلی: {settings['interval']} دقیقه")
+        return
 
     # تغییر بازه
-    elif data == "auto_change_interval":
+    if data == "auto_change_interval":
         context.user_data["mode"] = "auto_set_interval"
         await query.message.reply_text("عدد بازه جدید را بر حسب دقیقه وارد کن:")
+        return
 
     # مشاهده متن
-    elif data == "auto_view_text":
+    if data == "auto_view_text":
         await query.message.reply_text(f"📝 متن فعلی:\n\n{settings['text']}")
+        return
 
     # تغییر متن
-    elif data == "auto_change_text":
+    if data == "auto_change_text":
         context.user_data["mode"] = "auto_set_text"
         await query.message.reply_text("متن جدید پست خودکار را ارسال کن:")
-
-    # مشاهده امضا
-    elif data == "auto_view_signature":
-        await query.message.reply_text(f"🖋 امضای فعلی:\n\n{settings['signature']}")
-
-    # تغییر امضا
-    elif data == "auto_change_signature":
-        context.user_data["mode"] = "auto_set_signature"
-        await query.message.reply_text("امضای جدید را ارسال کن:")
+        return
 
     # شروع ارسال خودکار
-    elif data == "auto_start":
+    if data == "auto_start":
         settings["active"] = True
-        save_settings(settings)
+        save_auto_settings(settings)
         await query.message.reply_text("▶️ ارسال خودکار فعال شد (تایمر ریست شد)")
+        return
 
     # توقف ارسال خودکار
-    elif data == "auto_stop":
+    if data == "auto_stop":
         settings["active"] = False
-        save_settings(settings)
+        save_auto_settings(settings)
         await query.message.reply_text("⛔ ارسال خودکار متوقف شد")
+        return
 
-    # ورودی عدد بازه
-    elif context.user_data.get("mode") == "auto_set_interval":
+    # ---------- دریافت ورودی عدد بازه ----------
+    mode = context.user_data.get("mode")
+    if mode == "auto_set_interval":
         try:
             minutes = int(update.message.text)
             settings["interval"] = minutes
-            save_settings(settings)
+            save_auto_settings(settings)
             context.user_data["mode"] = None
             await update.message.reply_text(f"✅ بازه جدید ثبت شد: {minutes} دقیقه")
         except:
             await update.message.reply_text("❌ فقط عدد وارد کن")
+        return
 
-    # ورودی متن
-    elif context.user_data.get("mode") == "auto_set_text":
+    # ---------- دریافت متن جدید ----------
+    if mode == "auto_set_text":
         settings["text"] = update.message.text
-        save_settings(settings)
+        save_auto_settings(settings)
         context.user_data["mode"] = None
         await update.message.reply_text("✅ متن جدید ثبت شد")
-
-    # ورودی امضا
-    elif context.user_data.get("mode") == "auto_set_signature":
-        settings["signature"] = update.message.text
-        save_settings(settings)
-        context.user_data["mode"] = None
-        await update.message.reply_text("✅ امضای جدید ثبت شد")
-
-# ================= دریافت متن کامل پست =================
-def get_auto_post_text():
-    settings = load_settings()
-    return f"{settings['text']}\n\n{settings['signature']}"
