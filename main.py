@@ -75,7 +75,7 @@ app.add_handler(CallbackQueryHandler(show_scheduled_lives, pattern="scheduled_li
 app.add_handler(CallbackQueryHandler(start_timezone_post, pattern="timezone"))
 
 # فقط یک MessageHandler برای همه پیام‌های متنی و عکس‌ها
-app.add_handler(MessageHandler(filters.ALL, universal_message_router))
+app.add_handler(CallbackQueryHandler(handle_timezone_flow, pattern="^tz_"))
 
 # ================= RUN =================
 app.run_polling()
