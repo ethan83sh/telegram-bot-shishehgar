@@ -1,4 +1,3 @@
-# config.py
 import os
 
 ADMIN_ID = int(os.getenv("ADMIN_ID", "0"))
@@ -8,7 +7,6 @@ YOUTUBE_CHANELL_ID = os.getenv("YOUTUBE_CHANELL_ID", "")
 
 DEFAULT_TZ = "Europe/Berlin"
 DEFAULT_AUTO_INTERVAL_MIN = 13 * 60
-
 DEFAULT_SIGNATURE = "@Iran_Tajdar"
 
 DEFAULT_AUTO_TEXT = """با درود به همراهان گرامی،
