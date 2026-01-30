@@ -19,12 +19,13 @@ def live_job_name(live_id: str) -> str:
 def _live_text(title: str, desc: str, link: str) -> str:
     return (
         "🌟 لایو شروع شد!\n\n"
-        f"🎯 موضوع: {title}\n\n"
+        f"🎯 موضوع: {title}\n\n\n"
         f"{desc}\n\n"
         "📺 لینک مشاهده:\n"
         f"{link}\n\n"
-        "@IRan_Tajdar"
+        "@Iran_Tajdar"
     ).strip()
+
 
 async def auto_post_job(context: ContextTypes.DEFAULT_TYPE):
     text = storage.get_str("auto_text", DEFAULT_AUTO_TEXT)
@@ -67,7 +68,14 @@ async def youtube_rss_job(context: ContextTypes.DEFAULT_TYPE):
     for vid, title, link in entries[:10]:
         if vid in sent_set:
             continue
-        msg = f"🎬 ویدیوی جدید:\n{title}\n{link}".strip()
+        msg = (
+    "🎬 ویدیوی جدید منتشر شد!\n\n"
+    f"📌 تیتر: {title}\n\n"
+    "🔗 لینک:\n"
+    f"{link}\n\n"
+    "@Iran_Tajdar"
+).strip()
+
         await context.bot.send_message(chat_id=CHANNEL_ID, text=msg)
         sent.insert(0, vid)
         sent_set.add(vid)
