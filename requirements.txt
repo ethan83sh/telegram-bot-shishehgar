@@ -1,5 +1,4 @@
-pip uninstall python-telegram-bot -y
-pip install "python-telegram-bot[job-queue]==20.7"
+python-telegram-bot[job-queue]==20.7
 telethon
 requests==2.31.0
 python-dotenv==1.0.0
