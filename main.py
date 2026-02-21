@@ -6,7 +6,7 @@ import menus
 import conversations
 import jobs
 import storage
-from config import BOT_TOKEN, ADMIN_ID, CHANNEL_ID, DEFAULT_TZ, DEFAULT_AUTO_TEXT, DEFAULT_AUTO_INTERVAL_MIN
+from config import BOT_TOKEN2, ADMIN_ID, CHANNEL_ID, DEFAULT_TZ, DEFAULT_AUTO_TEXT, DEFAULT_AUTO_INTERVAL_MIN
 
 
 def ensure_defaults():
@@ -35,10 +35,10 @@ async def start(update: Update, context):
 
 def build_app() -> Application:
     ensure_defaults()
-    if not BOT_TOKEN or not ADMIN_ID or not CHANNEL_ID:
-        raise RuntimeError("ENV ناقص است: BOT_TOKEN / ADMIN_ID / CHANNEL_ID را تنظیم کن.")
+    if not BOT_TOKEN2 or not ADMIN_ID or not CHANNEL_ID:
+        raise RuntimeError("ENV ناقص است: BOT_TOKEN2 / ADMIN_ID / CHANNEL_ID را تنظیم کن.")
 
-    app = Application.builder().token(BOT_TOKEN).build()
+    app = Application.builder().token(BOT_TOKEN2).build()
 
     # /start
     app.add_handler(CommandHandler("start", start))
