@@ -1,7 +1,7 @@
 import os
 
 ADMIN_ID = int(os.getenv("ADMIN_ID", "0"))
-BOT_TOKEN = os.getenv("BOT_TOKEN", "")
+BOT_TOKEN2 = os.getenv("BOT_TOKEN2", "")
 CHANNEL_ID = int(os.getenv("CHANNEL_ID", "0"))
 YOUTUBE_CHANELL_ID = os.getenv("YOUTUBE_CHANELL_ID", "")
 
